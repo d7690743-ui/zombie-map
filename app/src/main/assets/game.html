@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>ZombieMap — Guadalupana, Valle de Chalco</title>
+<style>
+  html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; background: #1a1d24; font-family: sans-serif; }
+  #juego { position: fixed; inset: 0; }
+  #juego canvas { display: block; }
+  #hud { position: fixed; top: 10px; left: 10px; right: 10px; pointer-events: none; color: #fff; text-shadow: 0 1px 2px #000; }
+  #lugar { font-size: 15px; font-weight: bold; }
+  #calle { font-size: 13px; opacity: .9; margin-top: 2px; }
+  #barra { width: 160px; height: 14px; background: rgba(0,0,0,.6); border: 1px solid #fff; border-radius: 7px; margin-top: 6px; overflow: hidden; }
+  #vida { height: 100%; width: 100%; background: #2fae4e; }
+  #info { font-size: 13px; margin-top: 4px; }
+  #joy { position: fixed; left: 18px; bottom: 18px; width: 120px; height: 120px; border-radius: 50%; background: rgba(255,255,255,.12); border: 2px solid rgba(255,255,255,.35); touch-action: none; }
+  #palo { position: absolute; left: 35px; top: 35px; width: 50px; height: 50px; border-radius: 50%; background: rgba(255,255,255,.45); }
+  #ayuda { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); color: #fff; font-size: 12px; opacity: .7; text-shadow: 0 1px 2px #000; pointer-events: none; white-space: nowrap; }
+  #flash { position: fixed; inset: 0; background: #d00; opacity: 0; pointer-events: none; transition: opacity .3s; }
+  #fin { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; flex-direction: column; background: rgba(0,0,0,.75); color: #fff; text-align: center; }
+  #fin h1 { color: #d23b3b; margin: 0 0 10px; }
+  #fin button { font-size: 18px; padding: 12px 28px; border-radius: 8px; border: none; background: #2fae4e; color: #fff; }
+</style>
+</head>
+<body>
+<div id="juego"></div>
+<div id="hud">
+  <div id="lugar">🧟 ZombieMap — Guadalupana, Valle de Chalco</div>
+  <div id="calle">📍 —</div>
+  <div id="barra"><div id="vida"></div></div>
+  <div id="info"><span id="nzombies">Zombies: 15</span> · <span id="tiempo">Tiempo: 0s</span></div>
+</div>
+<div id="joy"><div id="palo"></div></div>
+<div id="ayuda">Joystick o WASD para moverte · Sobrevive a los zombies</div>
+<div id="flash"></div>
+<div id="fin">
+  <h1>¡Te atraparon!</h1>
+  <p>Sobreviviste <span id="segundos">0</span> segundos en Guadalupana.</p>
+  <button onclick="location.reload()">Reiniciar</button>
+</div>
+<script src="three.min.js"></script>
+<script src="mapa.js"></script>
+<script src="game.js"></script>
+</body>
+</html>
