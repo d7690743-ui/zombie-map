@@ -1,5 +1,5 @@
 // ============================================================
-//  ZombieMap v1 — zombies en el mapa real de Guadalupana,
+//  ZombieMap v1.1 — zombies en el mapa real de Guadalupana,
 //  Valle de Chalco Solidaridad (Estado de México).
 //  Three.js r128 (global THREE), datos en mapa.js (const MAPA).
 //  Coordenadas en METROS relativas a la casa de David (0,0);
@@ -13,8 +13,8 @@
   var VIDA_MAX = 100;
   var VEL_JUGADOR = 6;             // m/s
   var VEL_ZOMBIE_CAMINA = 1.5;     // m/s
-  var VEL_ZOMBIE_PERSECUCION = 3.2;// m/s
-  var DIST_PERSECUCION = 30;       // m
+  var VEL_ZOMBIE_PERSECUCION = 3.6;// m/s
+  var DIST_PERSECUCION = 45;       // m
   var DIST_ATAQUE = 1.2;           // m
   var DANO = 10;
   var INVULNERABLE_MS = 1000;
@@ -25,7 +25,7 @@
   scene.fog = new THREE.Fog(0x1a1d24, 120, 420);
 
   var camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
-  camera.position.set(SPAWN[0], 18, SPAWN[1] + 12);
+  camera.position.set(SPAWN[0], 24, SPAWN[1] + 18);
 
   var renderer = new THREE.WebGLRenderer({ antialias: false });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
@@ -40,7 +40,7 @@
   // ---------------- Suelo ----------------
   var suelo = new THREE.Mesh(
     new THREE.PlaneGeometry(1400, 1400),
-    new THREE.MeshLambertMaterial({ color: 0x22252b })
+    new THREE.MeshLambertMaterial({ color: 0x20242a })
   );
   suelo.rotation.x = -Math.PI / 2;
   suelo.position.y = 0;
@@ -71,7 +71,44 @@
     geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
     geo.setIndex(idx);
     scene.add(new THREE.Mesh(geo,
-      new THREE.MeshLambertMaterial({ color: 0x3a3d44, side: THREE.DoubleSide })));
+      new THREE.MeshLambertMaterial({ color: 0x5a5a5a, side: THREE.DoubleSide })));
+  })();
+
+  // Línea central discontinua blanca sobre cada calle (tramos de 3 m,
+  // huecos de 3 m, ancho 0.3 m). Material básico: siempre se ve clara.
+  (function construirLineas() {
+    var pos = [];
+    var idx = [];
+    var v = 0;
+    var ANCHO = 0.3, LARGO = 3, HUECO = 3;
+    for (var s = 0; s < MAPA.calles.length; s++) {
+      var pts = MAPA.calles[s];
+      for (var i = 0; i < pts.length - 1; i++) {
+        var ax = pts[i][0], az = pts[i][1];
+        var bx = pts[i + 1][0], bz = pts[i + 1][1];
+        var dx = bx - ax, dz = bz - az;
+        var len = Math.sqrt(dx * dx + dz * dz);
+        if (len < 0.01) continue;
+        var ux = dx / len, uz = dz / len;
+        var px = -uz * ANCHO / 2, pz = ux * ANCHO / 2;
+        var recor = 0;
+        while (recor < len) {
+          var t0 = recor, t1 = Math.min(recor + LARGO, len);
+          var x0 = ax + ux * t0, z0 = az + uz * t0;
+          var x1 = ax + ux * t1, z1 = az + uz * t1;
+          pos.push(x0 + px, 0.07, z0 + pz, x0 - px, 0.07, z0 - pz,
+                   x1 + px, 0.07, z1 + pz, x1 - px, 0.07, z1 - pz);
+          idx.push(v, v + 2, v + 1, v + 1, v + 2, v + 3);
+          v += 4;
+          recor += LARGO + HUECO;
+        }
+      }
+    }
+    var geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    geo.setIndex(idx);
+    scene.add(new THREE.Mesh(geo,
+      new THREE.MeshBasicMaterial({ color: 0xc8c8c8, side: THREE.DoubleSide })));
   })();
 
   // ---------------- Casas: un solo InstancedMesh ----------------
@@ -157,7 +194,17 @@
     mesh: crearPersona(0x2fae4e, 0x37c978)
   };
   jugador.mesh.position.set(jugador.x, 0, jugador.z);
+  jugador.mesh.scale.set(1.4, 1.4, 1.4);
   scene.add(jugador.mesh);
+
+  // Anillo verde brillante bajo los pies del jugador, para verlo siempre.
+  var anilloJugador = new THREE.Mesh(
+    new THREE.RingGeometry(0.75, 1.0, 32),
+    new THREE.MeshBasicMaterial({ color: 0x2eff7a, side: THREE.DoubleSide })
+  );
+  anilloJugador.rotation.x = -Math.PI / 2;
+  anilloJugador.position.set(jugador.x, 0.06, jugador.z);
+  scene.add(anilloJugador);
 
   // Puntos de calle cerca del spawn, para que los zombies nazcan cerca.
   var puntosCalle = [];
@@ -176,14 +223,34 @@
     return { x: centro.x, z: centro.z };
   }
 
+  // Punto de calle a distancia entre rMin y rMax del centro.
+  function puntoCalleAnillo(centro, rMin, rMax) {
+    for (var t = 0; t < 40; t++) {
+      var p = puntosCalle[Math.floor(Math.random() * puntosCalle.length)];
+      var d = Math.hypot(p[0] - centro.x, p[1] - centro.z);
+      if (d >= rMin && d <= rMax) return { x: p[0], z: p[1] };
+    }
+    return puntoCalleAzar(centro, rMax);
+  }
+
   var zombies = [];
   for (var zi = 0; zi < N_ZOMBIES; zi++) {
-    var sp = puntoCalleAzar(jugador, 300);
+    // Los 5 primeros nacen cerca (60–120 m) para que haya acción pronto.
+    var sp = zi < 5 ? puntoCalleAnillo(jugador, 60, 120) : puntoCalleAzar(jugador, 300);
     var zm = crearPersona(0x7a8a6a, 0x8a9a7a);
+    zm.scale.set(1.2, 1.2, 1.2);
     zm.position.set(sp.x, 0, sp.z);
     scene.add(zm);
+    // Anillo rojo tenue bajo cada zombie, para verlo entre las casas.
+    var anilloZ = new THREE.Mesh(
+      new THREE.RingGeometry(0.55, 0.78, 24),
+      new THREE.MeshBasicMaterial({ color: 0xff3333, transparent: true, opacity: 0.45, side: THREE.DoubleSide })
+    );
+    anilloZ.rotation.x = -Math.PI / 2;
+    anilloZ.position.set(sp.x, 0.06, sp.z);
+    scene.add(anilloZ);
     zombies.push({
-      x: sp.x, z: sp.z, mesh: zm,
+      x: sp.x, z: sp.z, mesh: zm, anillo: anilloZ,
       objetivo: puntoCalleAzar({ x: sp.x, z: sp.z }, 60), espera: 0
     });
   }
@@ -241,6 +308,45 @@
   var finEl = document.getElementById('fin');
   var segundosEl = document.getElementById('segundos');
 
+  // ---------------- Minimapa ----------------
+  var mapaCv = document.getElementById('minimapa');
+  var mapaCtx = mapaCv.getContext('2d');
+  var tMapa = 0;
+  var RANGO_MAPA = 250; // metros visibles alrededor del jugador
+
+  // Dibuja calles (grises), zombies (puntos rojos) y jugador (punto
+  // verde al centro). Norte arriba: x->derecha, z sur->abajo.
+  function dibujarMinimapa() {
+    var W = 150, H = 150;
+    var esc = (W / 2) / RANGO_MAPA; // px por metro
+    mapaCtx.fillStyle = 'rgba(16,18,22,0.92)';
+    mapaCtx.fillRect(0, 0, W, H);
+    mapaCtx.strokeStyle = '#8a8a8a';
+    mapaCtx.lineWidth = 1;
+    for (var s = 0; s < MAPA.calles.length; s++) {
+      var pts = MAPA.calles[s];
+      mapaCtx.beginPath();
+      for (var i = 0; i < pts.length; i++) {
+        var cx = W / 2 + (pts[i][0] - jugador.x) * esc;
+        var cy = H / 2 + (pts[i][1] - jugador.z) * esc;
+        if (i === 0) mapaCtx.moveTo(cx, cy);
+        else mapaCtx.lineTo(cx, cy);
+      }
+      mapaCtx.stroke();
+    }
+    mapaCtx.fillStyle = '#ff4444';
+    for (var zi = 0; zi < zombies.length; zi++) {
+      mapaCtx.beginPath();
+      mapaCtx.arc(W / 2 + (zombies[zi].x - jugador.x) * esc,
+                  H / 2 + (zombies[zi].z - jugador.z) * esc, 3, 0, Math.PI * 2);
+      mapaCtx.fill();
+    }
+    mapaCtx.fillStyle = '#2eff7a';
+    mapaCtx.beginPath();
+    mapaCtx.arc(W / 2, H / 2, 4, 0, Math.PI * 2);
+    mapaCtx.fill();
+  }
+
   // Segmentos de calle precalculados para el nombre de la calle actual.
   var segmentos = [];
   for (var sg = 0; sg < MAPA.calles.length; sg++) {
@@ -254,10 +360,13 @@
     }
   }
 
+  // La calle con nombre más cercana (hasta 15 m de su eje). Solo
+  // devuelve '' si de verdad no hay ninguna calle con nombre cerca.
   function calleActual(x, z) {
     var mejor = null, mejorD = 1e9;
     for (var i = 0; i < segmentos.length; i++) {
       var g = segmentos[i];
+      if (!g.nombre) continue;
       var dx = g.bx - g.ax, dz = g.bz - g.az;
       var l2 = dx * dx + dz * dz;
       var t = l2 === 0 ? 0 : ((x - g.ax) * dx + (z - g.az) * dz) / l2;
@@ -266,7 +375,7 @@
       var d = Math.hypot(x - px, z - pz);
       if (d < mejorD) { mejorD = d; mejor = g; }
     }
-    if (mejor && mejor.nombre && mejorD < mejor.w / 2 + 3) return mejor.nombre;
+    if (mejor && mejorD < 15) return mejor.nombre;
     return '';
   }
 
@@ -326,6 +435,7 @@
       resolverColision(zb, 0.5);
       if (vx !== 0 || vz !== 0) zb.mesh.rotation.y = Math.atan2(vx, vz);
       zb.mesh.position.set(zb.x, 0, zb.z);
+      zb.anillo.position.set(zb.x, 0.06, zb.z);
 
       // --- Ataque ---
       var d2 = Math.hypot(jugador.x - zb.x, jugador.z - zb.z);
@@ -350,8 +460,11 @@
       }
     }
 
+    // --- Anillo del jugador: siempre bajo sus pies ---
+    anilloJugador.position.set(jugador.x, 0.06, jugador.z);
+
     // --- Cámara: sigue desde atrás-arriba con lerp suave ---
-    camDeseada.set(jugador.x, 18, jugador.z + 12);
+    camDeseada.set(jugador.x, 24, jugador.z + 18);
     camera.position.lerp(camDeseada, Math.min(1, dt * 4));
     camera.lookAt(jugador.x, 1, jugador.z);
 
@@ -360,6 +473,11 @@
     vidaEl.style.background = jugador.vida > 50 ? '#2fae4e'
       : (jugador.vida > 25 ? '#e0a030' : '#d23b3b');
     tiempoEl.textContent = 'Tiempo: ' + Math.floor((Date.now() - inicio) / 1000) + 's';
+    tMapa += dt;
+    if (tMapa > 0.2) {
+      tMapa = 0;
+      dibujarMinimapa();
+    }
     tCalle += dt;
     if (tCalle > 0.25) {
       tCalle = 0;
@@ -377,6 +495,9 @@
   }
 
   zombiesEl.textContent = 'Zombies: ' + zombies.length;
+  dibujarMinimapa();
+  // Gancho de depuración (pruebas automatizadas; no afecta el juego).
+  window.__zm = { jugador: jugador, zombies: zombies, calleActual: calleActual, MAPA: MAPA };
   window.addEventListener('resize', function () {
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();

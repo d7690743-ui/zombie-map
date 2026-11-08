@@ -14,6 +14,7 @@
   #barra { width: 160px; height: 14px; background: rgba(0,0,0,.6); border: 1px solid #fff; border-radius: 7px; margin-top: 6px; overflow: hidden; }
   #vida { height: 100%; width: 100%; background: #2fae4e; }
   #info { font-size: 13px; margin-top: 4px; }
+  #minimapa { position: fixed; top: 10px; right: 10px; border: 2px solid rgba(255,255,255,.4); border-radius: 8px; background: rgba(0,0,0,.45); }
   #joy { position: fixed; left: 18px; bottom: 18px; width: 120px; height: 120px; border-radius: 50%; background: rgba(255,255,255,.12); border: 2px solid rgba(255,255,255,.35); touch-action: none; }
   #palo { position: absolute; left: 35px; top: 35px; width: 50px; height: 50px; border-radius: 50%; background: rgba(255,255,255,.45); }
   #ayuda { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); color: #fff; font-size: 12px; opacity: .7; text-shadow: 0 1px 2px #000; pointer-events: none; white-space: nowrap; }
@@ -31,6 +32,7 @@
   <div id="barra"><div id="vida"></div></div>
   <div id="info"><span id="nzombies">Zombies: 15</span> · <span id="tiempo">Tiempo: 0s</span></div>
 </div>
+<canvas id="minimapa" width="150" height="150"></canvas>
 <div id="joy"><div id="palo"></div></div>
 <div id="ayuda">Joystick o WASD para moverte · Sobrevive a los zombies</div>
 <div id="flash"></div>

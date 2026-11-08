@@ -18,6 +18,27 @@ teléfono, sin Steam ni PC.
   quita 10 de vida; a 0 sale la pantalla de fin con los segundos
   sobrevividos y botón de reinicio.
 
+## Novedades de la 1.1
+
+Mejoras tras probar la v1 en el teléfono (la captura mostraba las
+calles casi invisibles, la cámara muy cerrada, el jugador diminuto y
+ningún zombie en pantalla):
+
+- **Calles visibles**: suelo más oscuro, calles en gris claro y línea
+  central blanca discontinua sobre cada calle.
+- **Cámara más abierta**: sigue al jugador desde (0, 24, 18), FOV 60,
+  para ver más calle por delante y los zombies que vienen.
+- **Jugador más visible**: escala 1.4x y anillo verde brillante bajo
+  sus pies.
+- **Minimapa** arriba a la derecha (150x150): calles, jugador en
+  verde y zombies en rojo, norte arriba, se actualiza cada 200 ms.
+- **Nombre de calle**: ahora detecta la calle con nombre más cercana
+  hasta 15 m (antes solo sobre la calle) y casi nunca muestra "—".
+- **Zombies más visibles y activos**: escala 1.2x con anillo rojo
+  tenue, persiguen desde 45 m (antes 30 m) y más rápido (3.6 m/s);
+  5 de los 15 nacen a 60–120 m del jugador para que haya acción
+  pronto.
+
 ## Cómo se juega
 
 - **Teléfono**: joystick virtual abajo a la izquierda.
